@@ -1,0 +1,80 @@
+name: Validate Marketplace PR
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+    paths:
+      - "index.json"
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          persist-credentials: false
+      - id: validate
+        continue-on-error: true
+        run: node scripts/validate-marketplace-pr.mjs --base index.json --pr pr/index.json --out validation.json
+      - name: Comment and close on failure
+        if: steps.validate.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const result = JSON.parse(fs.readFileSync('validation.json', 'utf8'));
+            const errors = Array.isArray(result.errors) ? result.errors : ['Unknown error'];
+            const body = [
+              'Marketplace validation failed:',
+              '',
+              ...errors.map((message) => `- ${message}`)
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            await github.rest.issues.createComment({ owner, repo, issue_number: pull_number, body });
+            await github.rest.pulls.update({ owner, repo, pull_number, state: 'closed' });
+      - name: Auto-merge on success
+        if: steps.validate.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            if (context.payload.pull_request.draft) {
+              core.notice('PR is draft; skipping auto-merge.');
+              return;
+            }
+            try {
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number,
+                merge_method: 'squash'
+              });
+            } catch (error) {
+              const body = `Auto-merge failed: ${error.message}`;
+              await github.rest.issues.createComment({ owner, repo, issue_number: pull_number, body });
+              core.setFailed('Auto-merge failed');
+              return;
+            }
+            const headRepo = context.payload.pull_request.head.repo.full_name;
+            const baseRepo = `${owner}/${repo}`;
+            if (headRepo === baseRepo) {
+              const ref = `heads/${context.payload.pull_request.head.ref}`;
+              await github.rest.git.deleteRef({ owner, repo, ref });
+            }
+      - if: steps.validate.outcome == 'failure'
+        run: exit 1
