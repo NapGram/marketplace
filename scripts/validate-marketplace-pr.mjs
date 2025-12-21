@@ -132,9 +132,6 @@ for (const [id, basePlugin] of basePluginMap.entries()) {
     errors.push(`pr index.json: plugin "${id}" removed`);
     continue;
   }
-  if (basePlugin.name !== prPlugin.name) {
-    errors.push(`pr index.json: plugin "${id}" name changed`);
-  }
 }
 
 const downloads = [];
