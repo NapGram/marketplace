@@ -10,7 +10,6 @@ const getArg = (name) => {
 const basePath = getArg('--base');
 const prPath = getArg('--pr');
 const outPath = getArg('--out');
-const expectedIdArg = getArg('--expected-id');
 
 if (!basePath || !prPath) {
   console.error('Usage: node scripts/validate-marketplace-pr.mjs --base <path> --pr <path> [--out <path>]');
@@ -61,7 +60,6 @@ const errors = [];
 
 const baseIndex = await readJson(basePath);
 const prIndex = await readJson(prPath);
-const expectedPluginId = expectedIdArg || process.env.EXPECTED_PLUGIN_ID || '';
 
 function validateIndexShape(index, label) {
   if (index.schemaVersion !== 1) {
@@ -93,7 +91,6 @@ for (const plugin of basePlugins) {
 
 const prPluginMap = new Map();
 const prPluginIds = new Set();
-const changedPluginIds = new Set();
 
 for (const plugin of prPlugins) {
   if (!plugin || typeof plugin !== 'object') {
@@ -110,6 +107,19 @@ for (const plugin of prPlugins) {
   if (!isNonEmptyString(plugin.name)) {
     errors.push(`pr index.json: plugin "${plugin.id || 'unknown'}" missing name`);
   }
+  if (plugin.description !== undefined && !isNonEmptyString(plugin.description)) {
+    errors.push(`pr index.json: plugin "${plugin.id || 'unknown'}" description must be non-empty`);
+  }
+  if (plugin.readme !== undefined) {
+    try {
+      const readmeUrl = new URL(String(plugin.readme || '').trim());
+      if (readmeUrl.protocol !== 'https:') {
+        errors.push(`pr index.json: plugin "${plugin.id || 'unknown'}" readme must use https`);
+      }
+    } catch {
+      errors.push(`pr index.json: plugin "${plugin.id || 'unknown'}" readme must be a valid url`);
+    }
+  }
   if (!Array.isArray(plugin.versions) || plugin.versions.length === 0) {
     errors.push(`pr index.json: plugin "${plugin.id || 'unknown'}" must have versions`);
   }
@@ -120,12 +130,10 @@ for (const [id, basePlugin] of basePluginMap.entries()) {
   const prPlugin = prPluginMap.get(id);
   if (!prPlugin) {
     errors.push(`pr index.json: plugin "${id}" removed`);
-    changedPluginIds.add(id);
     continue;
   }
   if (basePlugin.name !== prPlugin.name) {
     errors.push(`pr index.json: plugin "${id}" name changed`);
-    changedPluginIds.add(id);
   }
 }
 
@@ -144,9 +152,6 @@ for (const plugin of prPlugins) {
   }
 
   if (!Array.isArray(plugin.versions)) continue;
-  if (!basePlugin) {
-    changedPluginIds.add(plugin.id);
-  }
 
   const seenVersions = new Set();
   for (const version of plugin.versions) {
@@ -206,12 +211,10 @@ for (const plugin of prPlugins) {
       const prCanonical = stableStringify(version);
       if (baseCanonical !== prCanonical) {
         errors.push(`pr index.json: version "${versionLabel}" modifies existing version`);
-        changedPluginIds.add(plugin.id);
       }
       continue;
     }
 
-    changedPluginIds.add(plugin.id);
     if (version.dist?.url && version.dist?.sha256) {
       downloads.push({
         label: versionLabel,
@@ -219,20 +222,6 @@ for (const plugin of prPlugins) {
         sha256: String(version.dist.sha256).toLowerCase(),
       });
     }
-  }
-}
-
-if (changedPluginIds.size === 0) {
-  errors.push('pr index.json: no plugin changes detected');
-} else if (changedPluginIds.size > 1) {
-  errors.push(`pr index.json: multiple plugin ids modified (${[...changedPluginIds].join(', ')})`);
-}
-
-if (expectedPluginId) {
-  if (!isValidId(expectedPluginId)) {
-    errors.push('pr index.json: expected plugin id is invalid');
-  } else if (!changedPluginIds.has(expectedPluginId)) {
-    errors.push(`pr index.json: changes must target plugin id "${expectedPluginId}"`);
   }
 }
 
