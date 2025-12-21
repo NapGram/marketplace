@@ -8,13 +8,49 @@
       "versions": [
         {
           "version": "0.1.0",
-          "entry": { "type": "file", "path": "dist/index.mjs" },
+          "entry": {
+            "type": "file",
+            "path": "dist/index.mjs"
+          },
           "dist": {
             "type": "tgz",
             "url": "https://github.com/NapLink/napgram-plugin-template/releases/download/v0.1.0/ping-pong-0.1.0.tgz",
             "sha256": "40e4993bf82b64712a5cd367b752caebd7b6773fbb22d5f862a38ff27aac2408"
           },
-          "permissions": { "network": [], "fs": [], "instances": [0] }
+          "permissions": {
+            "network": [],
+            "fs": [],
+            "instances": [
+              0
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "slave-market",
+      "name": "大牛马时代",
+      "description": "大牛马时代 - NapGram 群聊经济养成游戏插件",
+      "readme": "https://raw.githubusercontent.com/magisk317/napgram-plugin-slave-market/v1.0.1/README.md",
+      "versions": [
+        {
+          "version": "1.0.1",
+          "entry": {
+            "type": "file",
+            "path": "dist/index.mjs"
+          },
+          "dist": {
+            "type": "tgz",
+            "url": "https://github.com/magisk317/napgram-plugin-slave-market/releases/download/v1.0.1/slave-market-1.0.1.tgz",
+            "sha256": "571728705d5c0abea1d3a73cdb83214ce0d0b14a04c1aeddfbb15baf96f7dae9"
+          },
+          "permissions": {
+            "instances": [
+              0
+            ],
+            "network": [],
+            "fs": []
+          }
         }
       ]
     }
