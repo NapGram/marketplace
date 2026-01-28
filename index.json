@@ -96,7 +96,7 @@
       "id": "link-analysis",
       "name": "链接解析",
       "description": "解析小红书、B站、抖音分享链接并生成预览。",
-      "readme": "https://raw.githubusercontent.com/magisk317/napgram-plugin-link-analysis/v0.0.9/README.md",
+      "readme": "https://raw.githubusercontent.com/magisk317/napgram-plugin-link-analysis/v0.0.10/README.md",
       "versions": [
         {
           "version": "0.0.1",
@@ -224,6 +224,18 @@
             "type": "tgz",
             "url": "https://github.com/magisk317/napgram-plugin-link-analysis/releases/download/v0.0.9/link-analysis-0.0.9.tgz",
             "sha256": "24451fea3a1b5b0f3da1a50ab2f5114604691a804f9856dd87aa2d2422805edd"
+          }
+        },
+        {
+          "version": "0.0.10",
+          "entry": {
+            "type": "file",
+            "path": "dist/index.mjs"
+          },
+          "dist": {
+            "type": "tgz",
+            "url": "https://github.com/magisk317/napgram-plugin-link-analysis/releases/download/v0.0.10/link-analysis-0.0.10.tgz",
+            "sha256": "336fb41ddf9388087a862738be6d2cf8fede7503a51a7238a09c4c31df5a9b0f"
           }
         }
       ]
